@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner
+END
+MxL201RF.h
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL201RF.h
+END
+OSAL.h
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/OSAL.h
+END
+MxL201RF_API.c
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL201RF_API.c
+END
+sony_ascot2s.c
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/sony_ascot2s.c
+END
+MxL201RF_Common.h
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL201RF_Common.h
+END
+MxL_User_Define.c
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL_User_Define.c
+END
+MxL201RF_API.h
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL201RF_API.h
+END
+MxL201RF.c
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL201RF.c
+END
+sony_ascot2s.h
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/sony_ascot2s.h
+END
+MxL_User_Define.h
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/MXL_Tuner/MxL_User_Define.h
+END

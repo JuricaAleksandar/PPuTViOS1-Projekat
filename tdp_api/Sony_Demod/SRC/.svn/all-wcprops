@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC
+END
+sony_cxd2820_auto.h
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_cxd2820_auto.h
+END
+sony_dvb_math.h
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_math.h
+END
+sony_dvb_trace.c
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_trace.c
+END
+sony_dvb_demod_monitor.c
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_demod_monitor.c
+END
+sony_dvb_demod_monitorC.c
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_demod_monitorC.c
+END
+sony_cxd2820_version.c
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_cxd2820_version.c
+END
+sony_cxd2820.h
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_cxd2820.h
+END
+sony_dvb_demod_monitorT2.c
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_demod_monitorT2.c
+END
+sony_dvb_i2c.c
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_i2c.c
+END
+sony_dvb.c
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb.c
+END
+sony_dvb_demod_monitorT.c
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_demod_monitorT.c
+END
+sony_dvb_stdlib.h
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_stdlib.h
+END
+sony_dvb_demod.c
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_demod.c
+END
+sony_dvb_math.c
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_math.c
+END
+sony_dvb_cxd2820.c
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/sony_dvb_cxd2820.c
+END

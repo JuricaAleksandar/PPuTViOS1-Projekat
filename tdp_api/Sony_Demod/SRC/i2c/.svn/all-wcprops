@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c
+END
+i2c_listener.c
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_listener.c
+END
+i2c_listener.h
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_listener.h
+END

@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples
+END
+i2c_gateway.c
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/i2c_gateway.c
+END
+sony_dvb_dbg.c
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/sony_dvb_dbg.c
+END
+mopll_tuner.c
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/mopll_tuner.c
+END
+dvbt2_scanning.c
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/dvbt2_scanning.c
+END
+i2c_gateway.h
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/i2c_gateway.h
+END
+sony_dvb_dbg.h
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/sony_dvb_dbg.h
+END
+dvbt2_tuning.c
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/dvbt2_tuning.c
+END
+mopll_tuner.h
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/mopll_tuner.h
+END
+dvbtc_tuning.c
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/dvbtc_tuning.c
+END
+dvbt2_sqi.c
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/examples/dvbt2_sqi.c
+END

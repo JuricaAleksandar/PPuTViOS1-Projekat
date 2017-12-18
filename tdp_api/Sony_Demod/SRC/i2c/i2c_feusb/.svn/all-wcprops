@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_feusb
+END
+i2c_feusb.c
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_feusb/i2c_feusb.c
+END
+drvi2c_feusb.h
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_feusb/drvi2c_feusb.h
+END
+i2c_feusb.h
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_feusb/i2c_feusb.h
+END
+feusb.h
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_feusb/feusb.h
+END
+drvi2c_feusb.c
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/iwedia-ext/!svn/ver/3022/dev/sources/chal/core/tdal/branches/marvell/tdal_dmd/ter/Sony_Demod/SRC/i2c/i2c_feusb/drvi2c_feusb.c
+END
