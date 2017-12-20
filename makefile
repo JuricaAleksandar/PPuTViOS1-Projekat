@@ -39,7 +39,8 @@ all: parser_playback_sample
 SRCS =  ./main.c \
 		./remote_controller.c \
 		./stream_controller.c \
-		./graphics_controller.c
+		./graphics_controller.c \
+		./parser.c
 
 parser_playback_sample:
 	$(CC) -o zapper $(INCS) $(SRCS) $(CFLAGS) $(LIBS)
