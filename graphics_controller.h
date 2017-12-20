@@ -2,9 +2,11 @@
 #define GC_H
 
 #include <stdint.h>
+#include "tables.h"
 
 #define INFO_BANNER_HEIGHT 300
 #define PR_NUM_SIZE 150
+#define PR_LIST_HEIGHT 450
 
 /* helper macro for error checking */
 #define DFBCHECK(x...)                                      \
@@ -29,6 +31,7 @@ typedef struct _flags_and_params{
 	uint8_t print_volume;
 	uint8_t print_prog_num;
 	uint8_t print_info_banner;
+	uint8_t print_prog_list;
 	uint8_t volume_keypress;
 	uint8_t prog_num_keypress;
 	uint8_t info_banner_keypress;
@@ -40,6 +43,8 @@ int32_t print_volume(uint32_t);
 int32_t print_prog_num(uint16_t, uint8_t);
 int32_t print_info_banner(uint16_t, uint16_t, uint16_t, uint8_t);
 int32_t print_black_screen();
+int32_t print_prog_list(service_info*, uint16_t);
+int32_t remove_prog_list();
 static void* render_loop(void*);
 static void* volume_timer();
 static void* info_timer();

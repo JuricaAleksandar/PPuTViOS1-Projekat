@@ -11,6 +11,34 @@ static pthread_mutex_t zapper_exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int32_t callback(uint16_t code, uint16_t type, uint32_t value)
 {
+	if(code == KEYCODE_P_1 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(0);
+	}
+	if(code == KEYCODE_P_2 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(1);
+	}
+	if(code == KEYCODE_P_3 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(2);
+	}
+	if(code == KEYCODE_P_4 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(3);
+	}
+	if(code == KEYCODE_P_5 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(4);
+	}
+	if(code == KEYCODE_P_6 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(5);
+	}
+	if(code == KEYCODE_P_7 && value == EV_VALUE_KEYPRESS)
+	{
+		change_program(6);
+	}
 	if(code == KEYCODE_P_PLUS && value == EV_VALUE_KEYPRESS)
 	{
 		next_program();
@@ -22,6 +50,14 @@ int32_t callback(uint16_t code, uint16_t type, uint32_t value)
 	if(code == KEYCODE_INFO && value == EV_VALUE_KEYPRESS)
 	{
 		get_prog_info();
+	}
+	if(code == KEYCODE_OK && value == EV_VALUE_KEYPRESS)
+	{
+		get_prog_list();
+	}
+	if(code == KEYCODE_BACK && value == EV_VALUE_KEYPRESS)
+	{
+		remove_prog_list();
 	}
 	if(code == KEYCODE_V_PLUS && value == EV_VALUE_KEYPRESS)
 	{
@@ -54,7 +90,7 @@ int32_t main(int32_t argc, char** argv)
 {
 	remote_init();
 	remote_callback_register(callback);
-	stream_init(print_prog_num,print_black_screen,print_info_banner);
+	stream_init(print_prog_num,print_black_screen,print_info_banner,print_prog_list);
 	graphics_init();
 	pthread_cond_wait(&zapper_exit_condition, &zapper_exit_mutex);	
 	graphics_deinit();

@@ -31,6 +31,16 @@ static struct itimerspec info_timer_spec_old;
 
 static int32_t timer_flags = 0;
 
+static IDirectFBFont *font_interface[2];
+static DFBFontDescription font_desc;
+
+static IDirectFBImageProvider *provider;
+static IDirectFBSurface *logo_surface[11];
+static int32_t logo_height;
+static int32_t logo_width;
+
+static service_info* program_list;
+static uint16_t program_count;
 static uint8_t wait = 0;
 static flags_and_params render_fnp;
 static pthread_mutex_t render_fnp_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -84,6 +94,38 @@ int32_t graphics_init()
 
     /* fetch the screen size */
     DFBCHECK (primary_surface->GetSize(primary_surface, &screen_width, &screen_height));
+
+	font_desc.flags = DFDESC_HEIGHT;
+	font_desc.height = 45;
+
+	/* create the font and set the created font for primary surface text drawing */
+	DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, font_interface));
+
+	font_desc.height = 60;
+
+	/* create the font and set the created font for primary surface text drawing */
+	DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, font_interface+1));
+
+	uint8_t i;
+	for(i = 0;i <= 10; i++)
+	{
+		char file_name[20];
+		sprintf(file_name,"volume/volume_%u.png",i);
+		/* create the image provider for the specified file */
+		DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, file_name, &provider));
+		/* get surface descriptor for the surface where the image will be rendered */
+		DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
+		/* create the surface for the image */
+		DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, logo_surface+i));
+		/* render the image to the surface */
+		DFBCHECK(provider->RenderTo(provider, logo_surface[i], NULL));
+
+		/* cleanup the provider after rendering the image to the surface */
+		provider->Release(provider);
+	}
+
+	/* fetch the logo size and add (blit) it to the screen */
+	DFBCHECK(logo_surface[0]->GetSize(logo_surface[0], &logo_width, &logo_height));
 
 	render_fnp.radio_program = 0;
 	render_fnp.volume = 0;
@@ -173,6 +215,68 @@ static void* render_loop(void* param)
 					               /*destination y coordinate of the upper left corner of the image*/(screen_height - logo_height)/2));
 			pthread_mutex_lock(&render_fnp_mutex);
 		}
+		if(render_fnp.print_prog_list == 1)
+		{
+			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
+	                           /*red*/ 0x00,
+	                           /*green*/ 0xa6,
+	                           /*blue*/ 0x54,
+	                           /*alpha*/ 0xff));
+
+			DFBCHECK(primary_surface->FillRectangle(/*surface to draw on*/ primary_surface,
+	                                /*upper left x coordinate*/ 50,
+	                                /*upper left y coordinate*/ screen_height - INFO_BANNER_HEIGHT - PR_LIST_HEIGHT - 60,
+	                                /*rectangle width*/ screen_width - 100,
+	                                /*rectangle height*/ PR_LIST_HEIGHT));
+		
+			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
+	                           /*red*/ 0xff,
+	                           /*green*/ 0xff,
+	                           /*blue*/ 0xff,
+	                           /*alpha*/ 0xff));			
+
+			DFBCHECK(primary_surface->FillRectangle(primary_surface,
+								60, 
+								screen_height - INFO_BANNER_HEIGHT - PR_LIST_HEIGHT - 50, 
+								screen_width - 120, 
+								PR_LIST_HEIGHT - 20));
+
+			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
+	                           /*red*/ 0x00,
+	                           /*green*/ 0xa6,
+	                           /*blue*/ 0x54,
+	                           /*alpha*/ 0xff));			
+
+			DFBCHECK(primary_surface->FillRectangle(primary_surface,
+								65, 
+								screen_height - INFO_BANNER_HEIGHT - PR_LIST_HEIGHT - 45, 
+								screen_width - 130, 
+								PR_LIST_HEIGHT - 30));
+	
+			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
+	                           /*red*/ 0xff,
+	                           /*green*/ 0xff,
+	                           /*blue*/ 0xff,
+	                           /*alpha*/ 0xff));	
+		
+			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface[0]));		
+
+			uint16_t i;
+			for(i = 0; i < program_count; i++)
+			{
+				char string[60];
+				sprintf(string,"%u. Service name: %s, Stream type: %u",i+1,program_list[i].service_name,program_list[i].service_type);
+
+				/* draw the text */
+				DFBCHECK(primary_surface->DrawString(primary_surface,
+				                         /*text to be drawn*/ string,
+				                         /*number of bytes in the string, -1 for NULL terminated strings*/ -1,
+				                         /*x coordinate of the lower left corner of the resulting text*/ 80,
+				                         /*y coordinate of the lower left corner of the resulting text*/ screen_height - INFO_BANNER_HEIGHT - PR_LIST_HEIGHT + 15 + i * 55,
+				                         /*in case of multiple lines, allign text to left*/ DSTF_LEFT));
+			}
+		
+		}
 		if(render_fnp.print_prog_num == 1)
 		{
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
@@ -209,28 +313,18 @@ static void* render_loop(void* param)
 								65, 
 								PR_NUM_SIZE - 30, 
 								PR_NUM_SIZE - 30));
-
-			/* draw text */
-
-			IDirectFBFont *font_interface = NULL;
-			DFBFontDescription font_desc;
-	
-			/* specify the height of the font by raising the appropriate flag and setting the height value */
-			font_desc.flags = DFDESC_HEIGHT;
-			font_desc.height = 60;
 	
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 	                           /*red*/ 0xff,
 	                           /*green*/ 0xff,
 	                           /*blue*/ 0xff,
 	                           /*alpha*/ 0xff));			
-
-			/* create the font and set the created font for primary surface text drawing */
-			DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, &font_interface));
-			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface));
 		
 			char number[4];
 			sprintf(number,"%u",render_fnp.order_prog_num);
+
+			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface[1]));
+
 			/* draw the text */
 			DFBCHECK(primary_surface->DrawString(primary_surface,
 				                         /*text to be drawn*/ number,
@@ -252,32 +346,8 @@ static void* render_loop(void* param)
 		}
 		if(render_fnp.print_volume == 1)
 		{
-			IDirectFBImageProvider *provider;
-			IDirectFBSurface *logoSurface = NULL;
-			int32_t logo_height, logo_width;
-			char file_name[20];
-			char number[3];
-			sprintf(number,"%u",render_fnp.volume);
-			strcpy(file_name,"volume/volume_");
-			strcat(file_name,number);
-			strcat(file_name,".png");
-
-			/* create the image provider for the specified file */
-			DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, file_name, &provider));
-			/* get surface descriptor for the surface where the image will be rendered */
-			DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
-			/* create the surface for the image */
-			DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, &logoSurface));
-			/* render the image to the surface */
-			DFBCHECK(provider->RenderTo(provider, logoSurface, NULL));
-
-			/* cleanup the provider after rendering the image to the surface */
-			provider->Release(provider);
-
-			/* fetch the logo size and add (blit) it to the screen */
-			DFBCHECK(logoSurface->GetSize(logoSurface, &logo_width, &logo_height));
 			DFBCHECK(primary_surface->Blit(primary_surface,
-					               /*source surface*/ logoSurface,
+					               /*source surface*/ logo_surface[render_fnp.volume],
 					               /*source region, NULL to blit the whole surface*/ NULL,
 					               /*destination x coordinate of the upper left corner of the image*/screen_width - logo_width - 50,
 					               /*destination y coordinate of the upper left corner of the image*/50));
@@ -328,32 +398,28 @@ static void* render_loop(void* param)
 								screen_height - INFO_BANNER_HEIGHT - 35, 
 								screen_width - 130, 
 								INFO_BANNER_HEIGHT - 30));
-				
-			/* draw text */
-
-			IDirectFBFont *font_interface = NULL;
-			DFBFontDescription font_desc;
-	
-			/* specify the height of the font by raising the appropriate flag and setting the height value */
-			font_desc.flags = DFDESC_HEIGHT;
-			font_desc.height = 60;
 	
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 	                           /*red*/ 0xff,
 	                           /*green*/ 0xff,
 	                           /*blue*/ 0xff,
-	                           /*alpha*/ 0xff));			
+	                           /*alpha*/ 0xff));	
 
-			/* create the font and set the created font for primary surface text drawing */
-			DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, &font_interface));
-			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface));
+			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface[1]));		
 		
 			char pr_number[20];
 			char audio_pid[20];
 			char video_pid[20];
 			
 			sprintf(audio_pid,"Audio PID: %u",render_fnp.audio_pid);
-			sprintf(video_pid,"Video PID: %u",render_fnp.video_pid);
+			if(render_fnp.video_pid == 65000)
+			{
+				sprintf(video_pid,"Video PID: /");
+			}
+			else
+			{
+				sprintf(video_pid,"Video PID: %u",render_fnp.video_pid);
+			}
 			sprintf(pr_number,"Program number: %u",render_fnp.prog_num);
 			/* draw the text */
 			DFBCHECK(primary_surface->DrawString(primary_surface,
@@ -493,6 +559,8 @@ int32_t print_info_banner(uint16_t prog_num, uint16_t audio_pid, uint16_t video_
 	render_fnp.video_pid = video_pid;
 	render_fnp.print_info_banner = 1;
 	render_fnp.info_banner_keypress = 1;
+	render_fnp.print_prog_num = 1;
+	render_fnp.prog_num_keypress = 1;
 	pthread_mutex_unlock(&render_fnp_mutex);
 
 	return 0;
@@ -504,6 +572,26 @@ int32_t print_black_screen()
 	wait = 1;
 	pthread_mutex_unlock(&render_fnp_mutex);
 	
+	return 0;
+}
+
+int32_t print_prog_list(service_info* service_list, uint16_t count)
+{
+	pthread_mutex_lock(&render_fnp_mutex);
+	program_list = service_list;
+	program_count = count;
+	render_fnp.print_prog_list = 1;
+	pthread_mutex_unlock(&render_fnp_mutex);
+
+	return 0;
+}
+
+int32_t remove_prog_list()
+{
+	pthread_mutex_lock(&render_fnp_mutex);
+	render_fnp.print_prog_list = 0;
+	pthread_mutex_unlock(&render_fnp_mutex);
+
 	return 0;
 }
 

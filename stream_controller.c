@@ -4,7 +4,6 @@
 #include <pthread.h>
 #include "errno.h"
 #include "stream_controller.h"
-#include "tables.h"
 
 static inline void textColor(int32_t attr, int32_t fg, int32_t bg)
 {
@@ -19,6 +18,7 @@ static stream_status status;
 static int32_t (*prog_info_callback)(uint16_t,uint16_t,uint16_t,uint8_t);
 static int32_t (*ch_prog_callback)(uint16_t,uint8_t);
 static int32_t (*bgd_callback)();
+static int32_t (*prog_list_callback)(service_info*,uint16_t);
 static stream_params str_prm;
 static pthread_mutex_t stream_params_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t stream_exit_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -147,17 +147,17 @@ static int32_t filter_callback(uint8_t *buffer)
 	return 0;
 }
 
-int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(),int32_t (*callback3)(uint16_t,uint16_t,uint16_t,uint8_t))
+int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(),int32_t (*callback3)(uint16_t,uint16_t,uint16_t,uint8_t),int32_t (*callback4)(service_info*,uint16_t))
 {
 	str_prm.next_program = 0;
 	str_prm.previous_program = 0;
 	str_prm.change_program = 0;
 	str_prm.get_prog_info = 0;
-	str_prm.set_volume = 0;
 	
 	ch_prog_callback = callback1;
 	bgd_callback = callback2;
 	prog_info_callback = callback3;
+	prog_list_callback = callback4;
 
     struct timespec lockStatusWaitTime;
     struct timeval now;
@@ -284,6 +284,53 @@ static void* stream_loop(void* param)
 
 		pthread_mutex_lock(&stream_params_mutex);
 
+		if(str_prm.change_program == 1)
+		{
+			bgd_callback();
+
+			if(status.audio_on == 1)
+			{
+				error = Player_Stream_Remove(player_handle, source_handle, audio_stream_handle);
+				ASSERT_TDP_THREAD_RESULT(error, "Audio stream removed");
+				status.audio_on = 0;
+			}
+			if(status.video_on == 1)
+			{
+				error = Player_Stream_Remove(player_handle, source_handle, video_stream_handle);
+				ASSERT_TDP_THREAD_RESULT(error, "Video stream removed");
+				status.video_on = 0;
+			}
+	
+			error = Demux_Free_Filter(player_handle, filter_handle);
+			ASSERT_TDP_THREAD_RESULT(error, "Demux free filter");
+	
+			error = Demux_Set_Filter(player_handle, PAT.pmts[pr_counter].table_id, 0x02 , &filter_handle);
+			ASSERT_TDP_THREAD_RESULT(error, "Demux set filter");
+
+			pthread_mutex_lock(&status_mutex);
+			pthread_cond_wait(&status_condition, &status_mutex);   
+			pthread_mutex_unlock(&status_mutex);
+
+			uint8_t radio = 0;
+			if(PAT.pmts[pr_counter].video_pid == 65000)
+				radio = 1;
+			ch_prog_callback(pr_counter + 1, radio);
+
+			if(PAT.pmts[pr_counter].audio_pid != 65000)
+			{
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, AUDIO_TYPE_MPEG_AUDIO, &audio_stream_handle);
+				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
+				status.audio_on = 1;
+			}
+			if(PAT.pmts[pr_counter].video_pid != 65000)
+			{
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
+				status.video_on = 1;
+			}
+
+			str_prm.change_program = 0;
+		}
 		if(str_prm.next_program == 1)
 		{
 			if(pr_counter + 1 == PAT.pmt_count)
@@ -393,6 +440,11 @@ static void* stream_loop(void* param)
 			prog_info_callback(PAT.pmts[pr_counter].pr_num, PAT.pmts[pr_counter].audio_pid, PAT.pmts[pr_counter].video_pid, PAT.pmts[pr_counter].has_teletext);
 			str_prm.get_prog_info = 0;
 		}
+		if(str_prm.get_prog_list == 1)
+		{
+			prog_list_callback(SDT.services,PAT.pmt_count);
+			str_prm.get_prog_list = 0;
+		}
 		pthread_mutex_unlock(&stream_params_mutex);
 	
 		pthread_mutex_lock(&stream_exit_mutex);
@@ -400,6 +452,16 @@ static void* stream_loop(void* param)
 	pthread_mutex_unlock(&stream_exit_mutex);
 
 	return (void*)0;
+}
+
+int32_t change_program(uint8_t program)
+{
+	pthread_mutex_lock(&stream_params_mutex);
+	str_prm.change_program = 1;
+	pr_counter = program;
+	pthread_mutex_unlock(&stream_params_mutex);
+
+	return 0;
 }
 
 int32_t next_program()
@@ -434,5 +496,14 @@ int32_t get_prog_info()
 	str_prm.get_prog_info = 1;
 	pthread_mutex_unlock(&stream_params_mutex);
 	
+	return 0;
+}
+
+int32_t get_prog_list()
+{
+	pthread_mutex_lock(&stream_params_mutex);
+	str_prm.get_prog_list = 1;
+	pthread_mutex_unlock(&stream_params_mutex);
+
 	return 0;
 }
