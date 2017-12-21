@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <pthread.h>
+#include <signal.h>
+#include <string.h>
 #include "errno.h"
 #include "stream_controller.h"
 #include "parser.h"
@@ -14,6 +16,12 @@ static inline void textColor(int32_t attr, int32_t fg, int32_t bg)
    sprintf(command, "%c[%d;%d;%dm", 0x1B, attr, fg + 30, bg + 40);
    printf("%s", command);
 }
+
+/* volume timer */
+static timer_t pr_change_timer_id;
+static struct sigevent pr_change_signal_event;
+static struct itimerspec pr_change_timer_spec;
+static struct itimerspec pr_change_timer_spec_old;
 
 static stream_status status;
 static int32_t (*prog_info_callback)(uint16_t,uint16_t,uint16_t,uint8_t);
@@ -37,9 +45,18 @@ static pthread_mutex_t status_mutex = PTHREAD_MUTEX_INITIALIZER;
 static PAT_st PAT;
 static SDT_st SDT;
 
-static int32_t tuner_status_callback(t_LockStatus status)
+static void* pr_change_timer()
+{	
+	memset(&pr_change_timer_spec,0,sizeof(pr_change_timer_spec));
+	timer_settime(pr_change_timer_id,0,&pr_change_timer_spec,&pr_change_timer_spec_old);
+	ch_prog_callback(pr_counter + 1, 0);
+
+	return (void*)0;
+}
+
+static int32_t tuner_status_callback(t_LockStatus lock_status)
 {
-    if(status == STATUS_LOCKED)
+    if(lock_status == STATUS_LOCKED)
     {
         pthread_mutex_lock(&status_mutex);
         pthread_cond_signal(&status_condition);
@@ -113,10 +130,13 @@ static void* stream_loop(void* param)
 			pthread_cond_wait(&status_condition, &status_mutex);   
 			pthread_mutex_unlock(&status_mutex);
 
-			uint8_t radio = 0;
-			if(PAT.pmts[pr_counter].video_pid == 65000)
-				radio = 1;
-			ch_prog_callback(pr_counter + 1, radio);
+			if(PAT.pmts[pr_counter].video_pid != 65000)
+			{
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
+				status.video_on = 1;
+				sleep(1);
+			}
 
 			if(PAT.pmts[pr_counter].audio_pid != 65000)
 			{
@@ -124,11 +144,16 @@ static void* stream_loop(void* param)
 				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
 				status.audio_on = 1;
 			}
-			if(PAT.pmts[pr_counter].video_pid != 65000)
+
+			if(PAT.pmts[pr_counter].video_pid == 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
-				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
-				status.video_on = 1;
+				ch_prog_callback(pr_counter + 1, 1);
+			}
+			else
+			{
+				pr_change_timer_spec.it_value.tv_sec = 2;
+				pr_change_timer_spec.it_value.tv_nsec = 400000000;
+				timer_settime(pr_change_timer_id,0,&pr_change_timer_spec,&pr_change_timer_spec_old);
 			}
 
 			str_prm.change_program = 0;
@@ -165,10 +190,13 @@ static void* stream_loop(void* param)
 			pthread_cond_wait(&status_condition, &status_mutex);   
 			pthread_mutex_unlock(&status_mutex);
 
-			uint8_t radio = 0;
-			if(PAT.pmts[pr_counter].video_pid == 65000)
-				radio = 1;
-			ch_prog_callback(pr_counter + 1, radio);
+			if(PAT.pmts[pr_counter].video_pid != 65000)
+			{
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
+				status.video_on = 1;
+				sleep(1);
+			}
 
 			if(PAT.pmts[pr_counter].audio_pid != 65000)
 			{
@@ -176,11 +204,16 @@ static void* stream_loop(void* param)
 				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
 				status.audio_on = 1;
 			}
-			if(PAT.pmts[pr_counter].video_pid != 65000)
+
+			if(PAT.pmts[pr_counter].video_pid == 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
-				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
-				status.video_on = 1;
+				ch_prog_callback(pr_counter + 1, 1);
+			}
+			else
+			{
+				pr_change_timer_spec.it_value.tv_sec = 2;
+				pr_change_timer_spec.it_value.tv_nsec = 400000000;
+				timer_settime(pr_change_timer_id,0,&pr_change_timer_spec,&pr_change_timer_spec_old);
 			}
 
 			str_prm.next_program = 0;
@@ -217,10 +250,13 @@ static void* stream_loop(void* param)
 			pthread_cond_wait(&status_condition, &status_mutex);   
 			pthread_mutex_unlock(&status_mutex);
 
-			uint8_t radio = 0;
-			if(PAT.pmts[pr_counter].video_pid == 65000)
-				radio = 1;
-			ch_prog_callback(pr_counter + 1, radio);
+			if(PAT.pmts[pr_counter].video_pid != 65000)
+			{
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
+				status.video_on = 1;
+				sleep(1);
+			}		
 
 			if(PAT.pmts[pr_counter].audio_pid != 65000)
 			{
@@ -228,11 +264,16 @@ static void* stream_loop(void* param)
 				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
 				status.audio_on = 1;
 			}
-			if(PAT.pmts[pr_counter].video_pid != 65000)
+
+			if(PAT.pmts[pr_counter].video_pid == 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
-				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
-				status.video_on = 1;
+				ch_prog_callback(pr_counter + 1, 1);
+			}
+			else
+			{
+				pr_change_timer_spec.it_value.tv_sec = 2;
+				pr_change_timer_spec.it_value.tv_nsec = 400000000;
+				timer_settime(pr_change_timer_id,0,&pr_change_timer_spec,&pr_change_timer_spec_old);
 			}
 			
 			str_prm.previous_program = 0;
@@ -258,6 +299,14 @@ static void* stream_loop(void* param)
 
 int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(),int32_t (*callback3)(uint16_t,uint16_t,uint16_t,uint8_t),int32_t (*callback4)(service_info*,uint16_t))
 {
+	pr_change_signal_event.sigev_notify = SIGEV_THREAD;
+	pr_change_signal_event.sigev_notify_function = (void*)pr_change_timer;
+	pr_change_signal_event.sigev_value.sival_ptr = NULL;
+	pr_change_signal_event.sigev_notify_attributes = NULL;	
+	timer_create(/*sistemski sat za merenje vremena*/ CLOCK_REALTIME,                
+             /*podešavanja timer-a*/ &pr_change_signal_event,                      
+            /*mesto gde će se smestiti ID novog timer-a*/ &pr_change_timer_id);
+
 	str_prm.next_program = 0;
 	str_prm.previous_program = 0;
 	str_prm.change_program = 0;
@@ -346,6 +395,7 @@ int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(
 
 int32_t stream_deinit()
 {  
+	uint8_t i;
 	pthread_mutex_lock(&stream_exit_mutex);
 	stream_thread_running = 0;
 	pthread_mutex_unlock(&stream_exit_mutex);
@@ -379,16 +429,37 @@ int32_t stream_deinit()
     error = Tuner_Deinit();
     ASSERT_TDP_RESULT(error, "Tuner deinit");
 
-	free(PAT.pmts);	
+	free(PAT.pmts);
+	
+	for(i = 0; i < PAT.pmt_count; i++)
+	{
+		free(SDT.services[i].service_name);
+	}
      
+	free(SDT.services);
+
     return 0;
 }
 
 int32_t change_program(uint8_t program)
 {
 	pthread_mutex_lock(&stream_params_mutex);
-	str_prm.change_program = 1;
-	pr_counter = program;
+	if(program != pr_counter)
+	{
+		str_prm.change_program = 1;
+		pr_counter = program;
+	}
+	else
+	{
+		if(PAT.pmts[pr_counter].video_pid == 65000)
+			{
+				ch_prog_callback(pr_counter + 1, 1);
+			}
+			else
+			{
+				ch_prog_callback(pr_counter + 1, 0);
+			}
+	}
 	pthread_mutex_unlock(&stream_params_mutex);
 
 	return 0;

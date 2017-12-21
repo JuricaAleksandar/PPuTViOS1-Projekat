@@ -29,15 +29,17 @@ static struct sigevent info_signal_event;
 static struct itimerspec info_timer_spec;
 static struct itimerspec info_timer_spec_old;
 
-static int32_t timer_flags = 0;
-
 static IDirectFBFont *font_interface[2];
 static DFBFontDescription font_desc;
 
+static IDirectFBSurface *radio_surface;
+static int32_t radio_height;
+static int32_t radio_width;
+
 static IDirectFBImageProvider *provider;
-static IDirectFBSurface *logo_surface[11];
-static int32_t logo_height;
-static int32_t logo_width;
+static IDirectFBSurface *volume_surface[11];
+static int32_t volume_height;
+static int32_t volume_width;
 
 static service_info* program_list;
 static uint16_t program_count;
@@ -116,16 +118,31 @@ int32_t graphics_init()
 		/* get surface descriptor for the surface where the image will be rendered */
 		DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
 		/* create the surface for the image */
-		DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, logo_surface+i));
+		DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, volume_surface+i));
 		/* render the image to the surface */
-		DFBCHECK(provider->RenderTo(provider, logo_surface[i], NULL));
+		DFBCHECK(provider->RenderTo(provider, volume_surface[i], NULL));
 
 		/* cleanup the provider after rendering the image to the surface */
 		provider->Release(provider);
 	}
 
 	/* fetch the logo size and add (blit) it to the screen */
-	DFBCHECK(logo_surface[0]->GetSize(logo_surface[0], &logo_width, &logo_height));
+	DFBCHECK(volume_surface[0]->GetSize(volume_surface[0], &volume_width, &volume_height));
+
+	/* create the image provider for the specified file */
+	DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, "radio.png", &provider));
+	/* get surface descriptor for the surface where the image will be rendered */
+	DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
+	/* create the surface for the image */
+	DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, &radio_surface));
+	/* render the image to the surface */
+	DFBCHECK(provider->RenderTo(provider, radio_surface, NULL));
+
+	/* cleanup the provider after rendering the image to the surface */
+	provider->Release(provider);
+	
+	/* fetch the logo size and add (blit) it to the screen */
+	DFBCHECK(radio_surface->GetSize(radio_surface, &radio_width, &radio_height));
 
 	render_fnp.radio_program = 0;
 	render_fnp.volume = 0;
@@ -146,11 +163,17 @@ int32_t graphics_init()
 
 int32_t graphics_deinit()
 {
+	uint8_t i;
 	pthread_mutex_lock(&render_exit_mutex);
 	render_thread_running = 0;
 	pthread_mutex_unlock(&render_exit_mutex);
 	pthread_join(render_thread, NULL);
 	primary_surface->Release(primary_surface);
+	radio_surface->Release(radio_surface);
+	for(i = 0; i <= 10; i++)
+	{
+		volume_surface[i]->Release(volume_surface[i]);
+	}
 	dfb_interface->Release(dfb_interface);
 
 	return 0;
@@ -176,12 +199,9 @@ static void* render_loop(void* param)
 	                        /*rectangle height*/ screen_height));		
 
 		pthread_mutex_lock(&render_fnp_mutex);
-		if(render_fnp.radio_program == 1)
+		if(render_fnp.radio_program)
 		{
 			pthread_mutex_unlock(&render_fnp_mutex);
-			IDirectFBImageProvider *provider;
-			IDirectFBSurface *logo_surface = NULL;
-			int32_t logo_height, logo_width;
 			
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 	                           /*red*/ 0x00,
@@ -194,28 +214,31 @@ static void* render_loop(void* param)
 	                                /*rectangle width*/ screen_width,
 	                                /*rectangle height*/ screen_height));
 		
-			/* create the image provider for the specified file */
-			DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, "radio.png", &provider));
-			/* get surface descriptor for the surface where the image will be rendered */
-			DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
-			/* create the surface for the image */
-			DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, &logo_surface));
-			/* render the image to the surface */
-			DFBCHECK(provider->RenderTo(provider, logo_surface, NULL));
-
-			/* cleanup the provider after rendering the image to the surface */
-			provider->Release(provider);
-
-			/* fetch the logo size and add (blit) it to the screen */
-			DFBCHECK(logo_surface->GetSize(logo_surface, &logo_width, &logo_height));
 			DFBCHECK(primary_surface->Blit(primary_surface,
-					               /*source surface*/ logo_surface,
+					               /*source surface*/ radio_surface,
 					               /*source region, NULL to blit the whole surface*/ NULL,
-					               /*destination x coordinate of the upper left corner of the image*/(screen_width - logo_width)/2,
-					               /*destination y coordinate of the upper left corner of the image*/(screen_height - logo_height)/2));
+					               /*destination x coordinate of the upper left corner of the image*/(screen_width - radio_width)/2,
+					               /*destination y coordinate of the upper left corner of the image*/(screen_height - radio_height)/2));
+
+			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
+	                           /*red*/ 0xff,
+	                           /*green*/ 0xff,
+	                           /*blue*/ 0xff,
+	                           /*alpha*/ 0xff));	
+		
+			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface[1]));	
+
+			/* draw the text */
+			DFBCHECK(primary_surface->DrawString(primary_surface,
+			                         /*text to be drawn*/ "Radio playing...",
+			                         /*number of bytes in the string, -1 for NULL terminated strings*/ -1,
+			                         /*x coordinate of the lower left corner of the resulting text*/ screen_width/2 - 220,
+			                         /*y coordinate of the lower left corner of the resulting text*/ screen_height - 100,
+			                         /*in case of multiple lines, allign text to left*/ DSTF_LEFT));
+
 			pthread_mutex_lock(&render_fnp_mutex);
 		}
-		if(render_fnp.print_prog_list == 1)
+		if(render_fnp.print_prog_list)
 		{
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 	                           /*red*/ 0x00,
@@ -277,7 +300,7 @@ static void* render_loop(void* param)
 			}
 		
 		}
-		if(render_fnp.print_prog_num == 1)
+		if(render_fnp.print_prog_num)
 		{
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 	                           /*red*/ 0x00,
@@ -333,36 +356,36 @@ static void* render_loop(void* param)
 				                         /*y coordinate of the lower left corner of the resulting text*/ 145,
 				                         /*in case of multiple lines, allign text to left*/ DSTF_LEFT));
 
-			if(render_fnp.prog_num_keypress == 1)
+			if(render_fnp.prog_num_keypress )
 			{
 				memset(&info_timer_spec,0,sizeof(info_timer_spec));
 				timer_settime(pr_num_timer_id,0,&pr_num_timer_spec,&pr_num_timer_spec_old);
 				pr_num_timer_spec.it_value.tv_sec = 3;
 				pr_num_timer_spec.it_value.tv_nsec = 0;
-				timer_settime(pr_num_timer_id,timer_flags,&pr_num_timer_spec,&pr_num_timer_spec_old);
+				timer_settime(pr_num_timer_id,0,&pr_num_timer_spec,&pr_num_timer_spec_old);
 			}
 			render_fnp.prog_num_keypress = 0;
 
 		}
-		if(render_fnp.print_volume == 1)
+		if(render_fnp.print_volume)
 		{
 			DFBCHECK(primary_surface->Blit(primary_surface,
-					               /*source surface*/ logo_surface[render_fnp.volume],
+					               /*source surface*/ volume_surface[render_fnp.volume],
 					               /*source region, NULL to blit the whole surface*/ NULL,
-					               /*destination x coordinate of the upper left corner of the image*/screen_width - logo_width - 50,
+					               /*destination x coordinate of the upper left corner of the image*/screen_width - volume_width - 50,
 					               /*destination y coordinate of the upper left corner of the image*/50));
 
-			if(render_fnp.volume_keypress == 1)
+			if(render_fnp.volume_keypress)
 			{
 				memset(&volume_timer_spec,0,sizeof(volume_timer_spec));
 				timer_settime(volume_timer_id,0,&volume_timer_spec,&volume_timer_spec_old);
 				volume_timer_spec.it_value.tv_sec = 3;
 				volume_timer_spec.it_value.tv_nsec = 0;
-				timer_settime(volume_timer_id,timer_flags,&volume_timer_spec,&volume_timer_spec_old);
+				timer_settime(volume_timer_id,0,&volume_timer_spec,&volume_timer_spec_old);
 			}
 			render_fnp.volume_keypress = 0;
 		}
-		if(render_fnp.print_info_banner == 1)
+		if(render_fnp.print_info_banner)
 		{
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 	                           /*red*/ 0x00,
@@ -445,7 +468,7 @@ static void* render_loop(void* param)
 				                         /*y coordinate of the lower left corner of the resulting text*/ screen_height - INFO_BANNER_HEIGHT + 170,
 				                         /*in case of multiple lines, allign text to left*/ DSTF_LEFT));
 
-			if(render_fnp.has_teletext == 1)
+			if(render_fnp.has_teletext)
 			{
 				DFBCHECK(primary_surface->DrawString(primary_surface,
 				                         /*text to be drawn*/ "Teletext: Available",
@@ -464,13 +487,13 @@ static void* render_loop(void* param)
 				                         /*in case of multiple lines, allign text to left*/ DSTF_LEFT));
 			}
 
-			if(render_fnp.info_banner_keypress == 1)
+			if(render_fnp.info_banner_keypress)
 			{
 				memset(&info_timer_spec,0,sizeof(info_timer_spec));
 				timer_settime(info_timer_id,0,&info_timer_spec,&info_timer_spec_old);
 				info_timer_spec.it_value.tv_sec = 3;
 				info_timer_spec.it_value.tv_nsec = 0;
-				timer_settime(info_timer_id,timer_flags,&info_timer_spec,&info_timer_spec_old);
+				timer_settime(info_timer_id,0,&info_timer_spec,&info_timer_spec_old);
 			}
 			render_fnp.info_banner_keypress = 0;
 		}
@@ -490,28 +513,8 @@ static void* render_loop(void* param)
 		                        /*upper left y coordinate*/ 0,
 		                        /*rectangle width*/ screen_width,
 		                        /*rectangle height*/ screen_height));
-			
-			/* switch between the displayed and the work buffer (update the display) */
-			DFBCHECK(primary_surface->Flip(primary_surface,
-			                   /*region to be updated, NULL for the whole surface*/NULL,
-			                   /*flip flags*/0));
-			
-			sleep(5);
-
-			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
-		                   /*red*/ 0x00,
-		                   /*green*/ 0x00,
-		                   /*blue*/ 0x00,
-		                   /*alpha*/ 0x00));
-
-			DFBCHECK(primary_surface->FillRectangle(/*surface to draw on*/ primary_surface,
-		                        /*upper left x coordinate*/ 0,
-		                        /*upper left y coordinate*/ 0,
-		                        /*rectangle width*/ screen_width,
-		                        /*rectangle height*/ screen_height));
 
 			pthread_mutex_lock(&render_fnp_mutex);	
-			wait = 0;
 		}
 		pthread_mutex_unlock(&render_fnp_mutex);	
 		
@@ -545,6 +548,7 @@ int32_t print_prog_num(uint16_t prog_num, uint8_t radio)
 	render_fnp.order_prog_num = prog_num;
 	render_fnp.print_prog_num = 1;
 	render_fnp.prog_num_keypress = 1;
+	wait = 0;
 	pthread_mutex_unlock(&render_fnp_mutex);
 
 	return 0;
@@ -570,6 +574,7 @@ int32_t print_black_screen()
 {
 	pthread_mutex_lock(&render_fnp_mutex);
 	wait = 1;
+	render_fnp.print_prog_list = 0;
 	pthread_mutex_unlock(&render_fnp_mutex);
 	
 	return 0;

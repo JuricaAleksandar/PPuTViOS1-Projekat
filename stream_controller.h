@@ -45,5 +45,6 @@ int32_t set_volume(uint32_t);
 static int32_t filter_callback(uint8_t*);
 static int32_t tuner_status_callback(t_LockStatus);
 static void* stream_loop(void*);
+static void* pr_change_timer();
 
 #endif
