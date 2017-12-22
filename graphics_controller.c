@@ -42,11 +42,8 @@ static int32_t volume_height;
 static int32_t volume_width;
 
 static service_info* program_list;
-static uint16_t program_count;
-static uint8_t wait = 0;
 static flags_and_params render_fnp;
 static pthread_mutex_t render_fnp_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t render_exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint8_t render_thread_running = 1;
 static pthread_t render_thread;
 static IDirectFBSurface *primary_surface = NULL;
@@ -143,17 +140,6 @@ int32_t graphics_init()
 	
 	/* fetch the logo size and add (blit) it to the screen */
 	DFBCHECK(radio_surface->GetSize(radio_surface, &radio_width, &radio_height));
-
-	render_fnp.radio_program = 0;
-	render_fnp.volume = 0;
-	render_fnp.order_prog_num = 0;
-	render_fnp.prog_num = 0;
-	render_fnp.print_volume = 0;
-	render_fnp.print_prog_num = 0;
-	render_fnp.print_info_banner = 0;
-	render_fnp.volume_keypress = 0;
-	render_fnp.prog_num_keypress = 0;
-	render_fnp.info_banner_keypress = 0;
 	
 	render_thread_running = 1;
 	pthread_create(&render_thread, NULL, render_loop, NULL);
@@ -164,9 +150,7 @@ int32_t graphics_init()
 int32_t graphics_deinit()
 {
 	uint8_t i;
-	pthread_mutex_lock(&render_exit_mutex);
 	render_thread_running = 0;
-	pthread_mutex_unlock(&render_exit_mutex);
 	pthread_join(render_thread, NULL);
 	primary_surface->Release(primary_surface);
 	radio_surface->Release(radio_surface);
@@ -181,11 +165,8 @@ int32_t graphics_deinit()
 
 static void* render_loop(void* param)
 {
-	pthread_mutex_lock(&render_exit_mutex);
 	while(render_thread_running)
 	{
-		pthread_mutex_unlock(&render_exit_mutex);
-		
 		DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
 		                   /*red*/ 0x00,
 		                   /*green*/ 0x00,
@@ -285,7 +266,7 @@ static void* render_loop(void* param)
 			DFBCHECK(primary_surface->SetFont(primary_surface, font_interface[0]));		
 
 			uint16_t i;
-			for(i = 0; i < program_count; i++)
+			for(i = 0; i < render_fnp.program_count; i++)
 			{
 				char string[60];
 				sprintf(string,"%u. Service name: %s, Stream type: %u",i+1,program_list[i].service_name,program_list[i].service_type);
@@ -499,7 +480,7 @@ static void* render_loop(void* param)
 		}
 		
 		
-		if(wait)
+		if(render_fnp.wait)
 		{
 			pthread_mutex_unlock(&render_fnp_mutex);	
 			DFBCHECK(primary_surface->SetColor(/*surface to draw on*/ primary_surface,
@@ -522,10 +503,7 @@ static void* render_loop(void* param)
 		DFBCHECK(primary_surface->Flip(primary_surface,
 			                   /*region to be updated, NULL for the whole surface*/NULL,
 			                   /*flip flags*/0));		
-
-		pthread_mutex_lock(&render_exit_mutex);
 	}
-	pthread_mutex_unlock(&render_exit_mutex);
 
 	return (void*)0;
 }
@@ -548,7 +526,7 @@ int32_t print_prog_num(uint16_t prog_num, uint8_t radio)
 	render_fnp.order_prog_num = prog_num;
 	render_fnp.print_prog_num = 1;
 	render_fnp.prog_num_keypress = 1;
-	wait = 0;
+	render_fnp.wait = 0;
 	pthread_mutex_unlock(&render_fnp_mutex);
 
 	return 0;
@@ -573,7 +551,7 @@ int32_t print_info_banner(uint16_t prog_num, uint16_t audio_pid, uint16_t video_
 int32_t print_black_screen()
 {
 	pthread_mutex_lock(&render_fnp_mutex);
-	wait = 1;
+	render_fnp.wait = 1;
 	render_fnp.print_prog_list = 0;
 	pthread_mutex_unlock(&render_fnp_mutex);
 	
@@ -584,7 +562,7 @@ int32_t print_prog_list(service_info* service_list, uint16_t count)
 {
 	pthread_mutex_lock(&render_fnp_mutex);
 	program_list = service_list;
-	program_count = count;
+	render_fnp.program_count = count;
 	render_fnp.print_prog_list = 1;
 	pthread_mutex_unlock(&render_fnp_mutex);
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "tdp_api.h"
 #include "tables.h"
+#include "config_params.h"
 
 #define ASSERT_TDP_RESULT(x,y)  if(NO_ERROR == x) \
                                     printf("%s success\n", y); \
@@ -35,7 +36,7 @@ typedef struct _stream_params{
 	uint8_t get_prog_list;
 }stream_params;
 
-int32_t stream_init(int32_t (*)(uint16_t,uint8_t),int32_t (*)(),int32_t (*)(uint16_t,uint16_t,uint16_t,uint8_t),int32_t (*)(service_info*,uint16_t));
+int32_t stream_init(int32_t (*)(uint16_t,uint8_t),int32_t (*)(),int32_t (*)(uint16_t,uint16_t,uint16_t,uint8_t),int32_t (*)(service_info*,uint16_t),config_params*);
 int32_t stream_deinit();
 int32_t get_prog_info();
 int32_t next_program();

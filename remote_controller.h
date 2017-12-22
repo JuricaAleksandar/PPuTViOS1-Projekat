@@ -31,7 +31,7 @@ int32_t remote_init();
 int32_t remote_deinit();
 int32_t remote_callback_register(int32_t (*function_pointer)(uint16_t, uint16_t, uint32_t));
 int32_t remote_callback_unregister();
-static void* remote_loop(void* param);
-static int32_t get_keys(int32_t count, uint8_t* buf, int32_t* event_read);
+static void* remote_loop();
+static int32_t get_keys(uint8_t* buf);
 
 #endif

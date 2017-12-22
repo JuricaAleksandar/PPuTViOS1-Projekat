@@ -21,6 +21,8 @@ if (err != DFB_OK)                                          \
 }
 
 typedef struct _flags_and_params{
+	uint8_t wait;
+	uint16_t program_count;
 	uint8_t radio_program;
 	uint8_t volume;
 	uint16_t order_prog_num;

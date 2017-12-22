@@ -40,7 +40,8 @@ SRCS =  ./main.c \
 		./remote_controller.c \
 		./stream_controller.c \
 		./graphics_controller.c \
-		./parser.c
+		./table_parser.c \
+		./config_parser.c
 
 parser_playback_sample:
 	$(CC) -o zapper $(INCS) $(SRCS) $(CFLAGS) $(LIBS)

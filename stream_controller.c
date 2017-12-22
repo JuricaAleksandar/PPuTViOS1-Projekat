@@ -6,7 +6,7 @@
 #include <string.h>
 #include "errno.h"
 #include "stream_controller.h"
-#include "parser.h"
+#include "table_parser.h"
 
 static inline void textColor(int32_t attr, int32_t fg, int32_t bg)
 {
@@ -17,7 +17,9 @@ static inline void textColor(int32_t attr, int32_t fg, int32_t bg)
    printf("%s", command);
 }
 
-/* volume timer */
+static config_params* params;
+
+/* program change timer */
 static timer_t pr_change_timer_id;
 static struct sigevent pr_change_signal_event;
 static struct itimerspec pr_change_timer_spec;
@@ -30,7 +32,6 @@ static int32_t (*bgd_callback)();
 static int32_t (*prog_list_callback)(service_info*,uint16_t);
 static stream_params str_prm;
 static pthread_mutex_t stream_params_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t stream_exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint8_t stream_thread_running = 1;
 static pthread_t stream_thread;
 static t_Error error;
@@ -51,7 +52,7 @@ static void* pr_change_timer()
 	timer_settime(pr_change_timer_id,0,&pr_change_timer_spec,&pr_change_timer_spec_old);
 	ch_prog_callback(pr_counter + 1, 0);
 
-	return (void*)0;
+	return (void*)NO_ERROR;
 }
 
 static int32_t tuner_status_callback(t_LockStatus lock_status)
@@ -67,7 +68,7 @@ static int32_t tuner_status_callback(t_LockStatus lock_status)
     {
         printf("\n\n\tCALLBACK NOT LOCKED\n\n");
     }
-    return 0;
+    return NO_ERROR;
 }
 
 static int32_t filter_callback(uint8_t *buffer)
@@ -91,16 +92,13 @@ static int32_t filter_callback(uint8_t *buffer)
 	pthread_mutex_lock(&status_mutex);
 	pthread_cond_signal(&status_condition);
 	pthread_mutex_unlock(&status_mutex);
-	return 0;
+	return NO_ERROR;
 }
 
 static void* stream_loop(void* param)
 {	
-	pthread_mutex_lock(&stream_exit_mutex);
 	while(stream_thread_running)
 	{
-		pthread_mutex_unlock(&stream_exit_mutex);
-
 		pthread_mutex_lock(&stream_params_mutex);
 
 		if(str_prm.change_program == 1)
@@ -132,7 +130,7 @@ static void* stream_loop(void* param)
 
 			if(PAT.pmts[pr_counter].video_pid != 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, params->video_type, &video_stream_handle);     
 				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
 				status.video_on = 1;
 				sleep(1);
@@ -140,7 +138,7 @@ static void* stream_loop(void* param)
 
 			if(PAT.pmts[pr_counter].audio_pid != 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, AUDIO_TYPE_MPEG_AUDIO, &audio_stream_handle);
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, params->audio_type, &audio_stream_handle);
 				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
 				status.audio_on = 1;
 			}
@@ -192,7 +190,7 @@ static void* stream_loop(void* param)
 
 			if(PAT.pmts[pr_counter].video_pid != 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, params->video_type, &video_stream_handle);     
 				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
 				status.video_on = 1;
 				sleep(1);
@@ -200,7 +198,7 @@ static void* stream_loop(void* param)
 
 			if(PAT.pmts[pr_counter].audio_pid != 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, AUDIO_TYPE_MPEG_AUDIO, &audio_stream_handle);
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, params->audio_type, &audio_stream_handle);
 				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
 				status.audio_on = 1;
 			}
@@ -252,7 +250,7 @@ static void* stream_loop(void* param)
 
 			if(PAT.pmts[pr_counter].video_pid != 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, params->video_type, &video_stream_handle);     
 				ASSERT_TDP_THREAD_RESULT(error, "Video stream created");
 				status.video_on = 1;
 				sleep(1);
@@ -260,7 +258,7 @@ static void* stream_loop(void* param)
 
 			if(PAT.pmts[pr_counter].audio_pid != 65000)
 			{
-				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, AUDIO_TYPE_MPEG_AUDIO, &audio_stream_handle);
+				error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, params->audio_type, &audio_stream_handle);
 				ASSERT_TDP_THREAD_RESULT(error, "Audio stream created");
 				status.audio_on = 1;
 			}
@@ -289,15 +287,12 @@ static void* stream_loop(void* param)
 			str_prm.get_prog_list = 0;
 		}
 		pthread_mutex_unlock(&stream_params_mutex);
-	
-		pthread_mutex_lock(&stream_exit_mutex);
 	}
-	pthread_mutex_unlock(&stream_exit_mutex);
 
 	return (void*)0;
 }
 
-int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(),int32_t (*callback3)(uint16_t,uint16_t,uint16_t,uint8_t),int32_t (*callback4)(service_info*,uint16_t))
+int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(),int32_t (*callback3)(uint16_t,uint16_t,uint16_t,uint8_t),int32_t (*callback4)(service_info*,uint16_t), config_params* conf_params)
 {
 	pr_change_signal_event.sigev_notify = SIGEV_THREAD;
 	pr_change_signal_event.sigev_notify_function = (void*)pr_change_timer;
@@ -307,11 +302,20 @@ int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(
              /*podešavanja timer-a*/ &pr_change_signal_event,                      
             /*mesto gde će se smestiti ID novog timer-a*/ &pr_change_timer_id);
 
+	status.audio_on = 0;
+	status.video_on = 0;
+
+	stream_thread_running = 0;
+
 	str_prm.next_program = 0;
 	str_prm.previous_program = 0;
 	str_prm.change_program = 0;
 	str_prm.get_prog_info = 0;
 	
+	params = conf_params;
+
+	pr_counter = params->program_number - 1;
+
 	ch_prog_callback = callback1;
 	bgd_callback = callback2;
 	prog_info_callback = callback3;
@@ -330,14 +334,14 @@ int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(
 	error = Tuner_Register_Status_Callback(tuner_status_callback);
 	ASSERT_TDP_RESULT(error,"Callback registration -");
 
-	error = Tuner_Lock_To_Frequency(754000000, 8, DVB_T);
+	error = Tuner_Lock_To_Frequency(params->frequency, params->bandwidth, params->modulation);
 	ASSERT_TDP_RESULT(error,"Locking -");
 	
 	pthread_mutex_lock(&status_mutex);
 	if(ETIMEDOUT == pthread_cond_timedwait(&status_condition, &status_mutex, &lockStatusWaitTime))
     {
         printf("\n\nLock timeout exceeded!\n\n");
-        return -1;
+        return ERROR;
     }
     pthread_mutex_unlock(&status_mutex);
 
@@ -372,35 +376,56 @@ int32_t stream_init(int32_t (*callback1)(uint16_t,uint8_t),int32_t (*callback2)(
 	error = Demux_Free_Filter(player_handle, filter_handle);
 	ASSERT_TDP_RESULT(error, "Demux free filter");
 	
-	error = Demux_Set_Filter(player_handle, PAT.pmts[0].table_id, 0x02 , &filter_handle);
+	error = Demux_Set_Filter(player_handle, PAT.pmts[pr_counter].table_id, 0x02 , &filter_handle);
 	ASSERT_TDP_RESULT(error, "Demux set filter");
-
 
 	pthread_mutex_lock(&status_mutex);
     pthread_cond_wait(&status_condition, &status_mutex);   
 	pthread_mutex_unlock(&status_mutex);
+	
+	if(params->audio_pid != PAT.pmts[pr_counter].audio_pid)
+	{
+		printf("\nInvalid audio pid!\n");
+		return ERROR;
+	}
 
-	error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, AUDIO_TYPE_MPEG_AUDIO, &audio_stream_handle);
+	if(params->video_pid != PAT.pmts[pr_counter].video_pid && PAT.pmts[pr_counter].video_pid != 65000)
+	{
+		printf("\nInvalid video pid!\n");
+		return ERROR;
+	}
+
+	error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].audio_pid, params->audio_type, &audio_stream_handle);
 	ASSERT_TDP_RESULT(error, "Audio stream created");
 
-	error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, VIDEO_TYPE_MPEG2, &video_stream_handle);     
+	error = Player_Stream_Create(player_handle, source_handle, PAT.pmts[pr_counter].video_pid, params->video_type, &video_stream_handle);     
 	ASSERT_TDP_RESULT(error, "Video stream created");
 
 	status.audio_on = 1;
 	status.video_on = 1;
 
-	stream_thread_running = 1;
+	stream_thread_running = 1;	
+
 	pthread_create(&stream_thread, NULL, stream_loop, NULL);
+
+	if (PAT.pmts[pr_counter].video_pid == 65000)
+	{
+		ch_prog_callback(pr_counter + 1, 1);
+	}
+	else
+	{
+		ch_prog_callback(pr_counter + 1, 0);
+	}
 }
 
 int32_t stream_deinit()
 {  
 	uint8_t i;
-	pthread_mutex_lock(&stream_exit_mutex);
-	stream_thread_running = 0;
-	pthread_mutex_unlock(&stream_exit_mutex);
-	pthread_join(stream_thread, NULL);
-
+	if(stream_thread_running == 1)
+	{
+		stream_thread_running = 0;
+		pthread_join(stream_thread, NULL);
+	}
 	if(status.audio_on == 1)
 	{
 		error = Player_Stream_Remove(player_handle, source_handle, audio_stream_handle);
@@ -438,27 +463,27 @@ int32_t stream_deinit()
      
 	free(SDT.services);
 
-    return 0;
+    return NO_ERROR;
 }
 
 int32_t change_program(uint8_t program)
 {
 	pthread_mutex_lock(&stream_params_mutex);
-	if(program != pr_counter)
+	if (program != pr_counter)
 	{
 		str_prm.change_program = 1;
 		pr_counter = program;
 	}
 	else
 	{
-		if(PAT.pmts[pr_counter].video_pid == 65000)
-			{
-				ch_prog_callback(pr_counter + 1, 1);
-			}
-			else
-			{
-				ch_prog_callback(pr_counter + 1, 0);
-			}
+		if (PAT.pmts[pr_counter].video_pid == 65000)
+		{
+			ch_prog_callback(pr_counter + 1, 1);
+		}
+		else
+		{
+			ch_prog_callback(pr_counter + 1, 0);
+		}
 	}
 	pthread_mutex_unlock(&stream_params_mutex);
 
