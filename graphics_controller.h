@@ -47,9 +47,5 @@ int32_t print_info_banner(uint16_t, uint16_t, uint16_t, uint8_t);
 int32_t print_black_screen();
 int32_t print_prog_list(service_info*, uint16_t);
 int32_t remove_prog_list();
-static void* render_loop(void*);
-static void* volume_timer();
-static void* info_timer();
-static void* pr_num_timer();
 
 #endif

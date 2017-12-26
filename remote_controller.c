@@ -10,16 +10,16 @@
 #define ERROR -1
 #define NO_ERROR 0
 
-static int8_t callback_thread_running = 1;
+/* remote controller thread flag: 1-running 0-stopped */
+static int8_t rc_thread_running = 0;
 static int32_t input_file_desc;
 static int32_t (*callback)(uint16_t, uint16_t, uint32_t) = NULL;
 static struct input_event* event_buf;
 static pthread_t callback_thread;
-static pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void* remote_loop()
 {
-    while(callback_thread_running)
+    while(rc_thread_running)
     {
 	    /* read input events */
 	    if(get_keys((uint8_t*)event_buf))
@@ -28,9 +28,12 @@ static void* remote_loop()
 			return (void*)ERROR;
 		}
 	
+		/* callback is used here if registered */
 		if(callback != NULL)
 		{
-			callback(event_buf->code, event_buf->type, event_buf->value);       
+			callback(/* input event code */event_buf->code,
+					/* input event type */event_buf->type,
+					/* input event value */event_buf->value);       
 		}
 	}
 
@@ -67,16 +70,17 @@ int32_t remote_init()
     ioctl(input_file_desc, EVIOCGNAME(sizeof(device_name)), device_name);
 	printf("\nRC device opened succesfully [%s]\n", device_name);
     
-    event_buf = malloc(sizeof(struct input_event));
+    event_buf = (input_event*)malloc(sizeof(struct input_event));
     if(!event_buf)
     {
         printf("\nError allocating memory!\n");
         return ERROR;
     }
 	
-	callback_thread_running = (uint8_t)1;
+	rc_thread_running = (uint8_t)1;
 	if (pthread_create(&callback_thread, NULL, &remote_loop, NULL) != 0)
 	{
+		rc_thread_running = (uint8_t)0;
 		printf("\nFailed to create remote controller thread!\n");
 		return ERROR;
 	}
@@ -88,22 +92,25 @@ int32_t remote_init()
 
 int32_t remote_deinit()
 {	
-	callback_thread_running = (uint8_t)0;
+	if(rc_thread_running == 1)
+	{
+		rc_thread_running = (uint8_t)0;
 	
-	void* retVal;
+		void* retVal;
 
-	if(pthread_join(callback_thread,&retVal))
-	{
-		printf("\nFailed to join remote controller thread!\n");
-		return ERROR;
+		if(pthread_join(callback_thread,&retVal))
+		{
+			printf("\nFailed to join remote controller thread!\n");
+			return ERROR;
+		}
+
+		if((int32_t)retVal == ERROR)
+		{
+			printf("\nError in remote controller thread!\n");
+			return ERROR;
+		}
 	}
-
-	if((int32_t)retVal == ERROR)
-	{
-		printf("\nError in remote controller thread!\n");
-		return ERROR;
-	}
-
+	
 	free(event_buf);
 	
 	printf("\nRemote controller deinitialized!\n");
