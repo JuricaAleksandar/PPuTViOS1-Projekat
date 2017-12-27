@@ -35,7 +35,11 @@ int32_t parse_config_file(char* file_name, config_params* params)
 		{
 			if(loaded_params[0] == (uint8_t)0)
 			{
-				params->frequency = atoi(param_value);
+				if ((params->frequency = atoi(param_value)) == 0)
+				{
+					printf("\nFrequency must be given as a number!\n");
+					return ERROR;
+				}
 				loaded_params[0] = (uint8_t)1;
 			}
 			else
@@ -48,7 +52,11 @@ int32_t parse_config_file(char* file_name, config_params* params)
 		{
 			if(loaded_params[1] == (uint8_t)0)
 			{			
-				params->bandwidth = atoi(param_value);
+				if ((params->bandwidth = atoi(param_value)) == 0)
+				{
+					printf("\nBandwidth must be given as a number!\n");
+					return ERROR;
+				}
 				loaded_params[1] = (uint8_t)1;
 			}
 			else
@@ -74,7 +82,11 @@ int32_t parse_config_file(char* file_name, config_params* params)
 		{
 			if(loaded_params[3] == (uint8_t)0)
 			{
-				params->audio_pid = atoi(param_value);
+				if ((params->audio_pid = atoi(param_value)) == 0)
+				{
+					printf("\nAudio PID must be given as a number!\n");
+					return ERROR;
+				}
 				loaded_params[3] = (uint8_t)1;
 			}
 			else
@@ -87,7 +99,11 @@ int32_t parse_config_file(char* file_name, config_params* params)
 		{
 			if(loaded_params[4] == (uint8_t)0)
 			{
-				params->video_pid = atoi(param_value);
+				if ((params->video_pid = atoi(param_value)) == 0)
+				{
+					printf("\nVideo PID must be given as a number!\n");
+					return ERROR;
+				}
 				loaded_params[4] = (uint8_t)1;
 			}			
 			else
@@ -126,7 +142,16 @@ int32_t parse_config_file(char* file_name, config_params* params)
 		{
 			if(loaded_params[7] == (uint8_t)0)
 			{
-				params->program_number = atoi(param_value);
+				if ((params->program_number = atoi(param_value)) == 0)
+				{
+					printf("\nProgram number must be given as a number!\n");
+					return ERROR;
+				}
+				if (params->program_number < 1 || params->program_number > 7)
+				{
+					printf("\nProgram number must be in range 1-7!\n");
+					return ERROR;
+				}
 				loaded_params[7] = (uint8_t)1;
 			}
 			else
