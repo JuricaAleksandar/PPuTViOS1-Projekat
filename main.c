@@ -65,6 +65,7 @@ int32_t callback(uint16_t code, uint16_t type, uint32_t value)
 					volume_lvl--;
 				set_volume((uint32_t)volume_lvl);
 				print_volume((uint32_t)volume_lvl);
+				break;
 			case KEYCODE_V_MUTE:
 				volume_mute = 1 - volume_mute;
 				set_volume((uint32_t)volume_lvl*volume_mute); 

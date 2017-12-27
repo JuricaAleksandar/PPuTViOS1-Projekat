@@ -64,151 +64,43 @@ static int screen_width = 0;
 static int screen_height = 0;
 static DFBSurfaceDescription surface_desc;
 
-int32_t graphics_init()
+/* volume timer function - resets volume indicator printing flag */
+static void* volume_timer()
 {
-	/* volume timer initialization */
-	volume_signal_event.sigev_notify = SIGEV_THREAD;
-	volume_signal_event.sigev_notify_function = (void*)volume_timer;
-	volume_signal_event.sigev_value.sival_ptr = NULL;
-	volume_signal_event.sigev_notify_attributes = NULL;	
-	if (timer_create(/* system clock */ CLOCK_REALTIME,                
-             /* timer config */ &volume_signal_event,                      
-            /* timer id variable */ &volume_timer_id))
-	{
-		printf("\nFailed to create volume timer!\n");
-		return ERROR;
-	}
-	
-	/* info banner timer initialization */
-	info_signal_event.sigev_notify = SIGEV_THREAD;
-	info_signal_event.sigev_notify_function = (void*)info_timer;
-	info_signal_event.sigev_value.sival_ptr = NULL;
-	info_signal_event.sigev_notify_attributes = NULL;	
-	if (timer_create(CLOCK_REALTIME, &info_signal_event, &info_timer_id))
-    {
-    	printf("\nFailed to create info banner timer!\n");
-    	return ERROR;
-    }		
+	memset(&volume_timer_spec,0,sizeof(volume_timer_spec));
+	timer_settime(volume_timer_id,0,&volume_timer_spec,&volume_timer_spec_old); // timer stop
 
-	/* program number timer initialization */
-	pr_num_signal_event.sigev_notify = SIGEV_THREAD;
-	pr_num_signal_event.sigev_notify_function = (void*)pr_num_timer;
-	pr_num_signal_event.sigev_value.sival_ptr = NULL;
-	pr_num_signal_event.sigev_notify_attributes = NULL;	
-	if (timer_create(CLOCK_REALTIME, &pr_num_signal_event, &pr_num_timer_id))
-	{
-		printf("\nFailed to create program number timer!\n");
-		return ERROR;
-	}
+	pthread_mutex_lock(&render_fnp_mutex);
+	render_fnp.print_volume = 0; // volume printing flag reset
+	pthread_mutex_unlock(&render_fnp_mutex);
 
-    /* initialize DirectFB */   
-	DFBCHECK(DirectFBInit(NULL,NULL));
-    /* fetch the DirectFB interface */
-	DFBCHECK(DirectFBCreate(&dfb_interface));
-    /* tell the DirectFB to take the full screen for this application */
-	DFBCHECK(dfb_interface->SetCooperativeLevel(dfb_interface, DFSCL_FULLSCREEN));
-	
-    
-    /* create primary surface with double buffering enabled */  
-	surface_desc.flags = DSDESC_CAPS;
-	surface_desc.caps = DSCAPS_PRIMARY | DSCAPS_FLIPPING;
-	DFBCHECK (dfb_interface->CreateSurface(dfb_interface, &surface_desc, &primary_surface));
-
-    /* fetch the screen size */
-    DFBCHECK (primary_surface->GetSize(primary_surface, &screen_width, &screen_height));
-
-    /* setting font height */
-	font_desc.flags = DFDESC_HEIGHT;
-	font_desc.height = 45;
-
-	/* create the font and set the created font for primary surface text drawing */
-	DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, font_interface));
-
-	/* setting font height */
-	font_desc.height = 60;
-
-	/* create the font and set the created font for primary surface text drawing */
-	DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, font_interface+1));
-
-	uint8_t i;
-	for (i = 0;i <= 10; i++)
-	{
-		char file_name[20];
-		sprintf(file_name,"volume/volume_%u.png",i);
-		/* create the image provider for the specified file */
-		DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, file_name, &provider));
-		/* get surface descriptor for the surface where the image will be rendered */
-		DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
-		/* create the surface for the image */
-		DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, volume_surface+i));
-		/* render the image to the surface */
-		DFBCHECK(provider->RenderTo(provider, volume_surface[i], NULL));
-
-		/* cleanup the provider after rendering the image to the surface */
-		provider->Release(provider);
-	}
-
-	/* fetch the logo size and add (blit) it to the screen */
-	DFBCHECK(volume_surface[0]->GetSize(volume_surface[0], &volume_width, &volume_height));
-
-	/* create the image provider for the specified file */
-	DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, "radio.png", &provider));
-	/* get surface descriptor for the surface where the image will be rendered */
-	DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
-	/* create the surface for the image */
-	DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, &radio_surface));
-	/* render the image to the surface */
-	DFBCHECK(provider->RenderTo(provider, radio_surface, NULL));
-
-	/* cleanup the provider after rendering the image to the surface */
-	provider->Release(provider);
-	
-	/* fetch the logo size and add (blit) it to the screen */
-	DFBCHECK(radio_surface->GetSize(radio_surface, &radio_width, &radio_height));
-	
-	render_thread_running = 1;
-	if (pthread_create(&render_thread, NULL, render_loop, NULL))
-	{
-		render_thread_running = 0;
-		printf("\nFailed to create graphics rendering thread!\n");
-		return ERROR;
-	}
-
-    return NO_ERROR;
+	return (void*)NO_ERROR;
 }
 
-int32_t graphics_deinit()
+/* info banner timer function - resets info banner printing flag */
+static void* info_timer()
 {
-	uint8_t i;
-	if(render_thread_running)
-	{
-		render_thread_running = 0;
+	memset(&info_timer_spec,0,sizeof(info_timer_spec));
+	timer_settime(info_timer_id,0,&info_timer_spec,&info_timer_spec_old); // timer stop
 
-		void* retVal;
+	pthread_mutex_lock(&render_fnp_mutex);
+	render_fnp.print_info_banner = 0; // info banner printing flag reset
+	pthread_mutex_unlock(&render_fnp_mutex);
 
-		if(pthread_join(render_thread,&retVal))
-		{
-			printf("\nFailed to join graphics rendering thread!\n");
-			return ERROR;
-		}
+	return (void*)NO_ERROR;
+}
 
-		if((int32_t)retVal == ERROR)
-		{
-			printf("\nError in graphics rendering thread!\n");
-			return ERROR;
-		}
-	}
+/* program number timer function - resets program number printing flag */
+static void* pr_num_timer()
+{
+	memset(&pr_num_timer_spec,0,sizeof(pr_num_timer_spec));
+	timer_settime(pr_num_timer_id,0,&pr_num_timer_spec,&pr_num_timer_spec_old); // timer stop
 
-	primary_surface->Release(primary_surface);
-	radio_surface->Release(radio_surface);
-	
-	for (i = 0; i <= 10; i++)
-	{
-		volume_surface[i]->Release(volume_surface[i]);
-	}
-	dfb_interface->Release(dfb_interface);
+	pthread_mutex_lock(&render_fnp_mutex);
+	render_fnp.print_prog_num = 0; // program list printing flag reset
+	pthread_mutex_unlock(&render_fnp_mutex);
 
-	return NO_ERROR;
+	return (void*)NO_ERROR;
 }
 
 static void* render_loop(void* param)
@@ -417,6 +309,153 @@ static void* render_loop(void* param)
 	return (void*)NO_ERROR;
 }
 
+int32_t graphics_init()
+{
+	/* volume timer initialization */
+	volume_signal_event.sigev_notify = SIGEV_THREAD;
+	volume_signal_event.sigev_notify_function = (void*)volume_timer;
+	volume_signal_event.sigev_value.sival_ptr = NULL;
+	volume_signal_event.sigev_notify_attributes = NULL;	
+	if (timer_create(/* system clock */ CLOCK_REALTIME,                
+             /* timer config */ &volume_signal_event,                      
+            /* timer id variable */ &volume_timer_id))
+	{
+		printf("\nFailed to create volume timer!\n");
+		return ERROR;
+	}
+	
+	/* info banner timer initialization */
+	info_signal_event.sigev_notify = SIGEV_THREAD;
+	info_signal_event.sigev_notify_function = (void*)info_timer;
+	info_signal_event.sigev_value.sival_ptr = NULL;
+	info_signal_event.sigev_notify_attributes = NULL;	
+	if (timer_create(CLOCK_REALTIME, &info_signal_event, &info_timer_id))
+    {
+    	printf("\nFailed to create info banner timer!\n");
+    	return ERROR;
+    }		
+
+	/* program number timer initialization */
+	pr_num_signal_event.sigev_notify = SIGEV_THREAD;
+	pr_num_signal_event.sigev_notify_function = (void*)pr_num_timer;
+	pr_num_signal_event.sigev_value.sival_ptr = NULL;
+	pr_num_signal_event.sigev_notify_attributes = NULL;	
+	if (timer_create(CLOCK_REALTIME, &pr_num_signal_event, &pr_num_timer_id))
+	{
+		printf("\nFailed to create program number timer!\n");
+		return ERROR;
+	}
+
+    /* initialize DirectFB */   
+	DFBCHECK(DirectFBInit(NULL,NULL));
+    /* fetch the DirectFB interface */
+	DFBCHECK(DirectFBCreate(&dfb_interface));
+    /* tell the DirectFB to take the full screen for this application */
+	DFBCHECK(dfb_interface->SetCooperativeLevel(dfb_interface, DFSCL_FULLSCREEN));
+	
+    
+    /* create primary surface with double buffering enabled */  
+	surface_desc.flags = DSDESC_CAPS;
+	surface_desc.caps = DSCAPS_PRIMARY | DSCAPS_FLIPPING;
+	DFBCHECK (dfb_interface->CreateSurface(dfb_interface, &surface_desc, &primary_surface));
+
+    /* fetch the screen size */
+    DFBCHECK (primary_surface->GetSize(primary_surface, &screen_width, &screen_height));
+
+    /* setting font height */
+	font_desc.flags = DFDESC_HEIGHT;
+	font_desc.height = 45;
+
+	/* create the font and set the created font for primary surface text drawing */
+	DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, font_interface));
+
+	/* setting font height */
+	font_desc.height = 60;
+
+	/* create the font and set the created font for primary surface text drawing */
+	DFBCHECK(dfb_interface->CreateFont(dfb_interface, "/home/galois/fonts/DejaVuSans.ttf", &font_desc, font_interface+1));
+
+	uint8_t i;
+	for (i = 0;i <= 10; i++)
+	{
+		char file_name[20];
+		sprintf(file_name,"volume/volume_%u.png",i);
+		/* create the image provider for the specified file */
+		DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, file_name, &provider));
+		/* get surface descriptor for the surface where the image will be rendered */
+		DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
+		/* create the surface for the image */
+		DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, volume_surface+i));
+		/* render the image to the surface */
+		DFBCHECK(provider->RenderTo(provider, volume_surface[i], NULL));
+
+		/* cleanup the provider after rendering the image to the surface */
+		provider->Release(provider);
+	}
+
+	/* fetch the logo size and add (blit) it to the screen */
+	DFBCHECK(volume_surface[0]->GetSize(volume_surface[0], &volume_width, &volume_height));
+
+	/* create the image provider for the specified file */
+	DFBCHECK(dfb_interface->CreateImageProvider(dfb_interface, "radio.png", &provider));
+	/* get surface descriptor for the surface where the image will be rendered */
+	DFBCHECK(provider->GetSurfaceDescription(provider, &surface_desc));
+	/* create the surface for the image */
+	DFBCHECK(dfb_interface->CreateSurface(dfb_interface, &surface_desc, &radio_surface));
+	/* render the image to the surface */
+	DFBCHECK(provider->RenderTo(provider, radio_surface, NULL));
+
+	/* cleanup the provider after rendering the image to the surface */
+	provider->Release(provider);
+	
+	/* fetch the logo size and add (blit) it to the screen */
+	DFBCHECK(radio_surface->GetSize(radio_surface, &radio_width, &radio_height));
+	
+	render_thread_running = 1;
+	if (pthread_create(&render_thread, NULL, render_loop, NULL))
+	{
+		render_thread_running = 0;
+		printf("\nFailed to create graphics rendering thread!\n");
+		return ERROR;
+	}
+
+    return NO_ERROR;
+}
+
+int32_t graphics_deinit()
+{
+	uint8_t i;
+	if(render_thread_running)
+	{
+		render_thread_running = 0;
+
+		void* retVal;
+
+		if(pthread_join(render_thread,&retVal))
+		{
+			printf("\nFailed to join graphics rendering thread!\n");
+			return ERROR;
+		}
+
+		if((int32_t)retVal == ERROR)
+		{
+			printf("\nError in graphics rendering thread!\n");
+			return ERROR;
+		}
+	}
+
+	primary_surface->Release(primary_surface);
+	radio_surface->Release(radio_surface);
+	
+	for (i = 0; i <= 10; i++)
+	{
+		volume_surface[i]->Release(volume_surface[i]);
+	}
+	dfb_interface->Release(dfb_interface);
+
+	return NO_ERROR;
+}
+
 /* set flags and params required for printing volume indicator */
 int32_t print_volume(uint32_t volume)
 {
@@ -494,43 +533,4 @@ int32_t remove_prog_list()
 	pthread_mutex_unlock(&render_fnp_mutex);
 
 	return NO_ERROR;
-}
-
-/* volume timer function - resets volume indicator printing flag */
-static void* volume_timer()
-{
-	memset(&volume_timer_spec,0,sizeof(volume_timer_spec));
-	timer_settime(volume_timer_id,0,&volume_timer_spec,&volume_timer_spec_old); // timer stop
-
-	pthread_mutex_lock(&render_fnp_mutex);
-	render_fnp.print_volume = 0; // volume printing flag reset
-	pthread_mutex_unlock(&render_fnp_mutex);
-
-	return (void*)NO_ERROR;
-}
-
-/* info banner timer function - resets info banner printing flag */
-static void* info_timer()
-{
-	memset(&info_timer_spec,0,sizeof(info_timer_spec));
-	timer_settime(info_timer_id,0,&info_timer_spec,&info_timer_spec_old); // timer stop
-
-	pthread_mutex_lock(&render_fnp_mutex);
-	render_fnp.print_info_banner = 0; // info banner printing flag reset
-	pthread_mutex_unlock(&render_fnp_mutex);
-
-	return (void*)NO_ERROR;
-}
-
-/* program number timer function - resets program number printing flag */
-static void* pr_num_timer()
-{
-	memset(&pr_num_timer_spec,0,sizeof(pr_num_timer_spec));
-	timer_settime(pr_num_timer_id,0,&pr_num_timer_spec,&pr_num_timer_spec_old); // timer stop
-
-	pthread_mutex_lock(&render_fnp_mutex);
-	render_fnp.print_prog_num = 0; // program list printing flag reset
-	pthread_mutex_unlock(&render_fnp_mutex);
-
-	return (void*)NO_ERROR;
 }

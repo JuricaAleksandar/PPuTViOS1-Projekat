@@ -70,7 +70,7 @@ int32_t remote_init()
     ioctl(input_file_desc, EVIOCGNAME(sizeof(device_name)), device_name);
 	printf("\nRC device opened succesfully [%s]\n", device_name);
     
-    event_buf = (input_event*)malloc(sizeof(struct input_event));
+    event_buf = (struct input_event*)malloc(sizeof(struct input_event));
     if(!event_buf)
     {
         printf("\nError allocating memory!\n");
